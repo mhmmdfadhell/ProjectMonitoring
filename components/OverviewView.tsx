@@ -64,7 +64,7 @@ export default function OverviewView({ data }: { data: MonitoringData }) {
           <div className="brand-eyebrow">// Project Cash</div>
           <h1>Overview</h1>
           <div className="subtitle">
-            Ringkasan cash-in dan status invoice per proyek
+            Summarycash-in dan status invoice per proyek
           </div>
         </div>
         <div className="header-right">
