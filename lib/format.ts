@@ -61,18 +61,18 @@ export function getProjectTransferMonthYear(p: {
 }
 
 export const MONTH_LABELS_SHORT: Record<string, string> = {
-  Januari: "Jan",
-  Februari: "Feb",
-  Maret: "Mar",
-  April: "Apr",
+  Januari: "Januari",
+  Februari: "Februari",
+  Maret: "Maret",
+  April: "April",
   Mei: "Mei",
-  Juni: "Jun",
-  Juli: "Jul",
-  Agustus: "Agu",
-  September: "Sep",
-  Oktober: "Okt",
-  November: "Nov",
-  Desember: "Des",
+  Juni: "Juni",
+  Juli: "Juli",
+  Agustus: "Agustus",
+  September: "September",
+  Oktober: "Oktober",
+  November: "November",
+  Desember: "Desember",
 };
 
 export const STATUS_COLORS: Record<string, string> = {
