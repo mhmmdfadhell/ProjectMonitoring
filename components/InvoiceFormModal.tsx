@@ -21,6 +21,7 @@ type FormState = {
   bast: string;
   no_invoice: string;
   invoice_submit: string;
+  no_kontrak: string;
   paid_date: string;
   status: ProjectStatus;
   status_updated_at: string;
@@ -35,6 +36,7 @@ const EMPTY_FORM: FormState = {
   value: "",
   bast: "",
   no_invoice: "",
+  no_kontrak: "",
   invoice_submit: "",
   paid_date: "",
   status: "In Progress",
@@ -51,6 +53,7 @@ function rowToForm(row: ProjectRow): FormState {
     value: String(row.value ?? ""),
     bast: row.bast ?? "",
     no_invoice: row.no_invoice ?? "",
+    no_kontrak: row.no_kontrak ?? "",
     invoice_submit: row.invoice_submit ?? "",
     paid_date: row.paid_date ?? "",
     status: row.status,
@@ -121,6 +124,7 @@ export default function InvoiceFormModal({
       value: numValue,
       bast: form.bast.trim(),
       no_invoice: form.no_invoice.trim() || null,
+      no_kontrak: form.no_kontrak.trim() || null,
       invoice_submit: form.invoice_submit || null,
       paid_date: form.paid_date || null,
       status: form.status,
@@ -199,6 +203,15 @@ export default function InvoiceFormModal({
                 onChange={(e) => set("project", e.target.value)}
                 placeholder="mis. BI OCP (Term 1)"
                 required
+              />
+            </label>
+            <label className="field">
+              <span>No. Kontrak/PO</span>
+              <input
+                type="text"
+                value={form.no_kontrak}
+                onChange={(e) => set("no_kontrak", e.target.value)}
+                placeholder="Opsional"
               />
             </label>
 

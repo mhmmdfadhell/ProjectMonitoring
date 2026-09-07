@@ -81,7 +81,7 @@ export default function ProjectTable({
       if (yearFilter && String(p.year) !== yearFilter) return false;
       if (monthFilter && p.month !== monthFilter) return false;
       if (q) {
-        const hay = `${p.project} ${p.client_norm} ${p.pic}`.toLowerCase();
+        const hay = `${p.project} ${p.client_norm} ${p.pic} ${p.no_kontrak || ""} ${p.no_invoice || ""}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
@@ -128,7 +128,7 @@ export default function ProjectTable({
           <input
             type="text"
             className="search-input"
-            placeholder="Cari proyek, klien, atau PIC..."
+            placeholder="Cari proyek, klien, PIC, no. kontrak, no. invoice..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />

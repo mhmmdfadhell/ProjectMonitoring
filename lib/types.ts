@@ -23,6 +23,7 @@ export interface ProjectRow {
   value: number;
   bast: string;
   no_invoice: string | null;
+  no_kontrak: string | null;
   invoice_submit: string | null;
   paid_date: string | null;
   status: ProjectStatus;

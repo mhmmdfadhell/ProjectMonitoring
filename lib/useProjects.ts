@@ -3,8 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { ProjectRow } from "./types";
 
-const STORAGE_KEY = "monitoring-proyek:projects:v1";
-
 function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
 }
@@ -13,109 +11,134 @@ function genId(): string {
   return "p-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 }
 
-function isStorageAvailable(): boolean {
-  try {
-    const testKey = "__storage_test__";
-    window.localStorage.setItem(testKey, "1");
-    window.localStorage.removeItem(testKey);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 export function useProjects(seed: ProjectRow[]) {
   const [projects, setProjects] = useState<ProjectRow[]>(seed);
-  // `ready` is React state (not a ref) on purpose: setting it together with
-  // setProjects() in the same effect batches both updates into a single
-  // re-render, so the persist effect below only ever runs with a fully
-  // up-to-date `projects` closure. Using a ref here previously caused a
-  // race — the ref flipped to "hydrated" synchronously before React
-  // re-rendered with the loaded data, so the persist effect could fire once
-  // with the stale seed value and briefly overwrite saved edits in
-  // localStorage.
-  const [ready, setReady] = useState(false);
-  // True once we've confirmed localStorage.setItem actually succeeds. If
-  // it's false, edits still work for the current session but will NOT
-  // survive a refresh/navigation (e.g. private browsing mode, storage
-  // disabled by browser settings, storage quota exceeded).
+  const [loading, setLoading] = useState(false);
   const [storageOk, setStorageOk] = useState(true);
 
-  // Load any saved edits/additions from localStorage on mount (client only)
-  useEffect(() => {
-    if (!isStorageAvailable()) {
-      setStorageOk(false);
-      setReady(true);
-      return;
-    }
+  // Load latest data from MySQL database API
+  const fetchProjects = useCallback(async () => {
     try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as ProjectRow[];
-        if (Array.isArray(parsed)) setProjects(parsed);
+      setLoading(true);
+      const res = await fetch("/api/projects");
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          setProjects(json.data);
+          setStorageOk(true);
+        }
       }
-    } catch {
-      // ignore corrupt storage, fall back to seed
+    } catch (err) {
+      console.error("Failed to load projects from MySQL API:", err);
+      setStorageOk(false);
+    } finally {
+      setLoading(false);
     }
-    setReady(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Persist every change, but only once the initial load above has settled.
   useEffect(() => {
-    if (!ready) return;
+    fetchProjects();
+  }, [fetchProjects]);
+
+  const addProject = useCallback(async (input: Omit<ProjectRow, "id">) => {
+    const row: ProjectRow = { ...input, id: genId() };
+    // Optimistic UI update
+    setProjects((prev) => [row, ...prev]);
+
     try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+      const res = await fetch("/api/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(row),
+      });
+      if (!res.ok) {
+        throw new Error("Failed to insert into database");
+      }
       setStorageOk(true);
-    } catch {
-      // storage full or unavailable — edits still work for this session
+    } catch (err) {
+      console.error("Error saving project to database:", err);
       setStorageOk(false);
     }
-  }, [projects, ready]);
-
-  const addProject = useCallback((input: Omit<ProjectRow, "id">) => {
-    const row: ProjectRow = { ...input, id: genId() };
-    setProjects((prev) => [...prev, row]);
     return row;
   }, []);
 
   const updateProject = useCallback(
-    (id: string, patch: Partial<Omit<ProjectRow, "id">>) => {
+    async (id: string, patch: Partial<Omit<ProjectRow, "id">>) => {
+      let finalStatusUpdatedAt = patch.status_updated_at;
+
+      // Optimistic update
       setProjects((prev) =>
         prev.map((p) => {
           if (p.id !== id) return p;
           const next = { ...p, ...patch };
-          // If status changed and caller didn't explicitly set status_updated_at,
-          // stamp today's date automatically.
           if (
             patch.status !== undefined &&
             patch.status !== p.status &&
             patch.status_updated_at === undefined
           ) {
             next.status_updated_at = todayISO();
+            finalStatusUpdatedAt = next.status_updated_at;
           }
           return next;
         })
       );
+
+      try {
+        const payload = {
+          ...patch,
+          ...(finalStatusUpdatedAt !== undefined
+            ? { status_updated_at: finalStatusUpdatedAt }
+            : {}),
+        };
+
+        const res = await fetch(`/api/projects/${encodeURIComponent(id)}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+          throw new Error("Failed to update in database");
+        }
+        setStorageOk(true);
+      } catch (err) {
+        console.error("Error updating project in database:", err);
+        setStorageOk(false);
+      }
     },
     []
   );
 
-  const deleteProject = useCallback((id: string) => {
+  const deleteProject = useCallback(async (id: string) => {
     setProjects((prev) => prev.filter((p) => p.id !== id));
+
+    try {
+      const res = await fetch(`/api/projects/${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        throw new Error("Failed to delete from database");
+      }
+      setStorageOk(true);
+    } catch (err) {
+      console.error("Error deleting project in database:", err);
+      setStorageOk(false);
+    }
   }, []);
 
-  const resetToSeed = useCallback(() => {
+  const resetToSeed = useCallback(async () => {
     setProjects(seed);
-    try {
-      window.localStorage.removeItem(STORAGE_KEY);
-    } catch {
-      // ignore
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seed]);
+    await fetchProjects();
+  }, [seed, fetchProjects]);
 
-  return { projects, addProject, updateProject, deleteProject, resetToSeed, storageOk };
+  return {
+    projects,
+    loading,
+    addProject,
+    updateProject,
+    deleteProject,
+    resetToSeed,
+    storageOk,
+  };
 }
 
 export { todayISO };

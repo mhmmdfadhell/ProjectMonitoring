@@ -100,6 +100,7 @@ export default function MonthCard({
               <tr>
                 <th>Klien</th>
                 <th>Proyek</th>
+                <th>No. Kontrak/PO</th>
                 <th>PIC</th>
                 <th style={{ textAlign: "right" }}>Nilai</th>
                 <th>Status</th>
@@ -112,7 +113,17 @@ export default function MonthCard({
               {sortedRows.map((p) => (
                 <tr key={p.id}>
                   <td>{p.client_norm}</td>
-                  <td className="proj-name">{p.project}</td>
+                  <td className="proj-name">
+                    <div>{p.project}</div>
+                    {p.no_invoice && (
+                      <div style={{ fontSize: "11px", color: "var(--text-dim)", marginTop: "2px" }}>
+                        Inv: {p.no_invoice}
+                      </div>
+                    )}
+                  </td>
+                  <td style={{ fontSize: "12px", color: p.no_kontrak ? "var(--text)" : "var(--text-dim)" }}>
+                    {p.no_kontrak || "—"}
+                  </td>
                   <td>{p.pic}</td>
                   <td className="val">{fmtRp(p.value)}</td>
                   <td>

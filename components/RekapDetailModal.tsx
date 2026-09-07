@@ -134,6 +134,7 @@ export default function RekapDetailModal({
                 <th style={{ textAlign: "right" }}>Nilai (Rp)</th>
                 <th>Status</th>
                 <th>No. Invoice</th>
+                <th>No. Kontrak/PO</th>
                 <th>Tgl Bayar (TF)</th>
                 <th>Tgl Submit</th>
               </tr>
@@ -151,6 +152,7 @@ export default function RekapDetailModal({
                     </span>
                   </td>
                   <td>{p.no_invoice || "—"}</td>
+                  <td>{p.no_kontrak || "—"}</td>
                   <td>{fmtDate(p.paid_date)}</td>
                   <td>{fmtDate(p.invoice_submit)}</td>
                 </tr>
@@ -158,7 +160,7 @@ export default function RekapDetailModal({
 
               {projects.length === 0 && (
                 <tr>
-                  <td colSpan={8} style={{ textAlign: "center", padding: "24px", color: "var(--text-dim)" }}>
+                  <td colSpan={9} style={{ textAlign: "center", padding: "24px", color: "var(--text-dim)" }}>
                     Tidak ada transaksi atau invoice pada tanggal ini.
                   </td>
                 </tr>
