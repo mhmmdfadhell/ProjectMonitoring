@@ -16,7 +16,7 @@ export function useProjects(seed: ProjectRow[]) {
   const [loading, setLoading] = useState(false);
   const [storageOk, setStorageOk] = useState(true);
 
-  // Load latest data from MySQL database API
+  // Load latest data from API / JSON storage
   const fetchProjects = useCallback(async () => {
     try {
       setLoading(true);
@@ -29,7 +29,7 @@ export function useProjects(seed: ProjectRow[]) {
         }
       }
     } catch (err) {
-      console.error("Failed to load projects from MySQL API:", err);
+      console.warn("Could not fetch projects from API:", err);
       setStorageOk(false);
     } finally {
       setLoading(false);
@@ -52,11 +52,12 @@ export function useProjects(seed: ProjectRow[]) {
         body: JSON.stringify(row),
       });
       if (!res.ok) {
-        throw new Error("Failed to insert into database");
+        setStorageOk(false);
+      } else {
+        setStorageOk(true);
       }
-      setStorageOk(true);
     } catch (err) {
-      console.error("Error saving project to database:", err);
+      console.warn("Error saving project to API:", err);
       setStorageOk(false);
     }
     return row;
@@ -96,12 +97,14 @@ export function useProjects(seed: ProjectRow[]) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
+
         if (!res.ok) {
-          throw new Error("Failed to update in database");
+          setStorageOk(false);
+        } else {
+          setStorageOk(true);
         }
-        setStorageOk(true);
       } catch (err) {
-        console.error("Error updating project in database:", err);
+        console.warn("Error updating project in API:", err);
         setStorageOk(false);
       }
     },
@@ -116,11 +119,12 @@ export function useProjects(seed: ProjectRow[]) {
         method: "DELETE",
       });
       if (!res.ok) {
-        throw new Error("Failed to delete from database");
+        setStorageOk(false);
+      } else {
+        setStorageOk(true);
       }
-      setStorageOk(true);
     } catch (err) {
-      console.error("Error deleting project in database:", err);
+      console.warn("Error deleting project in API:", err);
       setStorageOk(false);
     }
   }, []);
@@ -142,3 +146,4 @@ export function useProjects(seed: ProjectRow[]) {
 }
 
 export { todayISO };
+

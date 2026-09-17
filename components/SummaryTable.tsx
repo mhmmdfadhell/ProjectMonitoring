@@ -25,11 +25,8 @@ export default function SummaryTable({
     (acc, r) => ({
       cashInTotal: acc.cashInTotal + (r.cashInTotal || 0),
       invoiceCount: acc.invoiceCount + (r.invoiceCount || 0),
-      invoiceTotal: acc.invoiceTotal + (r.invoiceTotal || 0),
-      paidTotal: acc.paidTotal + (r.paidTotal || 0),
-      unpaidTotal: acc.unpaidTotal + (r.unpaidTotal || 0),
     }),
-    { cashInTotal: 0, invoiceCount: 0, invoiceTotal: 0, paidTotal: 0, unpaidTotal: 0 }
+    { cashInTotal: 0, invoiceCount: 0 }
   );
 
   return (
@@ -38,11 +35,8 @@ export default function SummaryTable({
         <thead>
           <tr>
             <th>{labelHeader}</th>
-            <th style={{ textAlign: "right" }}>Cash In (Bank)</th>
+            <th style={{ textAlign: "right" }}>Cash In</th>
             <th style={{ textAlign: "right" }}>Jml Invoice</th>
-            <th style={{ textAlign: "right" }}>Nilai Invoice</th>
-            <th style={{ textAlign: "right" }}>Sudah Dibayar</th>
-            <th style={{ textAlign: "right" }}>Belum Dibayar</th>
             {onView && <th style={{ textAlign: "center", width: "70px" }}>Aksi</th>}
           </tr>
         </thead>
@@ -55,15 +49,6 @@ export default function SummaryTable({
               </td>
               <td className={`num${r.invoiceCount === 0 ? " dim" : ""}`}>
                 {r.invoiceCount || "—"}
-              </td>
-              <td className={`num${r.invoiceTotal === 0 ? " dim" : ""}`}>
-                {r.invoiceTotal === 0 ? "—" : fmtRp(r.invoiceTotal)}
-              </td>
-              <td className={`num${r.paidTotal === 0 ? " dim" : ""}`}>
-                {r.paidTotal === 0 ? "—" : fmtRp(r.paidTotal)}
-              </td>
-              <td className={`num${r.unpaidTotal === 0 ? " dim" : ""}`}>
-                {r.unpaidTotal === 0 ? "—" : fmtRp(r.unpaidTotal)}
               </td>
               {onView && (
                 <td style={{ textAlign: "center" }}>
@@ -82,7 +67,7 @@ export default function SummaryTable({
           ))}
           {rows.length === 0 && (
             <tr>
-              <td colSpan={onView ? 7 : 6} style={{ textAlign: "center", padding: "20px" }}>
+              <td colSpan={onView ? 4 : 3} style={{ textAlign: "center", padding: "20px" }}>
                 Tidak ada data untuk periode ini.
               </td>
             </tr>
@@ -92,9 +77,6 @@ export default function SummaryTable({
               <td>Total</td>
               <td className="num">{fmtRp(grand.cashInTotal)}</td>
               <td className="num">{grand.invoiceCount}</td>
-              <td className="num">{fmtRp(grand.invoiceTotal)}</td>
-              <td className="num">{fmtRp(grand.paidTotal)}</td>
-              <td className="num">{fmtRp(grand.unpaidTotal)}</td>
               {onView && <td style={{ textAlign: "center", color: "var(--text-faint)" }}>—</td>}
             </tr>
           )}

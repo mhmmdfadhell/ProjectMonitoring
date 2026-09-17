@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import type { ProjectRow } from "@/lib/types";
+import { addJsonProject, readJsonData } from "@/lib/jsonDb";
 
 export async function GET() {
   try {
@@ -29,11 +30,9 @@ export async function GET() {
 
     return NextResponse.json({ success: true, data: projects });
   } catch (error: any) {
-    console.error("Failed to fetch projects:", error);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+    console.warn("MySQL unavailable, falling back to monitoring.json:", error.message);
+    const jsonData = readJsonData();
+    return NextResponse.json({ success: true, data: jsonData.projects || [], fallback: true });
   }
 }
 
@@ -62,27 +61,35 @@ export async function POST(request: Request) {
       status_updated_at: body.status_updated_at || null,
     };
 
-    await pool.execute(
-      `INSERT INTO projects (id, month, year, client, client_norm, project, pic, value, bast, no_invoice, no_kontrak, invoice_submit, paid_date, status, status_updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        projectData.id,
-        projectData.month,
-        projectData.year,
-        projectData.client,
-        projectData.client_norm,
-        projectData.project,
-        projectData.pic,
-        projectData.value,
-        projectData.bast,
-        projectData.no_invoice,
-        projectData.no_kontrak,
-        projectData.invoice_submit,
-        projectData.paid_date,
-        projectData.status,
-        projectData.status_updated_at,
-      ]
-    );
+    // Always persist to monitoring.json file
+    addJsonProject(projectData);
+
+    // Attempt MySQL persistence if DB is connected
+    try {
+      await pool.execute(
+        `INSERT INTO projects (id, month, year, client, client_norm, project, pic, value, bast, no_invoice, no_kontrak, invoice_submit, paid_date, status, status_updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          projectData.id,
+          projectData.month,
+          projectData.year,
+          projectData.client,
+          projectData.client_norm,
+          projectData.project,
+          projectData.pic,
+          projectData.value,
+          projectData.bast,
+          projectData.no_invoice,
+          projectData.no_kontrak,
+          projectData.invoice_submit,
+          projectData.paid_date,
+          projectData.status,
+          projectData.status_updated_at,
+        ]
+      );
+    } catch (dbErr: any) {
+      console.warn("MySQL insert skipped (using JSON file fallback):", dbErr.message);
+    }
 
     return NextResponse.json({ success: true, data: projectData }, { status: 201 });
   } catch (error: any) {
@@ -93,3 +100,4 @@ export async function POST(request: Request) {
     );
   }
 }
+

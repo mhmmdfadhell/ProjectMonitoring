@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
+import { deleteJsonProject, updateJsonProject } from "@/lib/jsonDb";
 
 export async function PUT(
   request: Request,
@@ -43,9 +44,17 @@ export async function PUT(
       );
     }
 
-    values.push(id);
-    const sql = `UPDATE projects SET ${fieldsToUpdate.join(", ")} WHERE id = ?`;
-    await pool.execute(sql, values);
+    // Always update JSON file database first
+    updateJsonProject(id, patch);
+
+    // Attempt MySQL update if available
+    try {
+      values.push(id);
+      const sql = `UPDATE projects SET ${fieldsToUpdate.join(", ")} WHERE id = ?`;
+      await pool.execute(sql, values);
+    } catch (dbErr: any) {
+      console.warn("MySQL update skipped (saved to JSON file instead):", dbErr.message);
+    }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
@@ -63,7 +72,17 @@ export async function DELETE(
 ) {
   try {
     const { id } = await context.params;
-    await pool.execute("DELETE FROM projects WHERE id = ?", [id]);
+
+    // Always delete from JSON file
+    deleteJsonProject(id);
+
+    // Attempt MySQL delete if available
+    try {
+      await pool.execute("DELETE FROM projects WHERE id = ?", [id]);
+    } catch (dbErr: any) {
+      console.warn("MySQL delete skipped (deleted from JSON file instead):", dbErr.message);
+    }
+
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error("Failed to delete project:", error);
@@ -73,3 +92,4 @@ export async function DELETE(
     );
   }
 }
+

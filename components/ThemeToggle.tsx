@@ -6,10 +6,16 @@ const THEME_KEY = "monitoring-proyek:theme";
 
 export default function ThemeToggle() {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const current = document.documentElement.getAttribute("data-theme");
-    setTheme(current === "light" ? "light" : "dark");
+    if (current === "light") {
+      setTheme("light");
+    } else {
+      setTheme("dark");
+    }
   }, []);
 
   function toggle() {
@@ -23,12 +29,25 @@ export default function ThemeToggle() {
     }
   }
 
+  if (!mounted) {
+    return (
+      <button
+        type="button"
+        className="theme-toggle"
+        suppressHydrationWarning
+      >
+        <span>☾</span> Dark Mode
+      </button>
+    );
+  }
+
   return (
     <button
       type="button"
       className="theme-toggle"
       onClick={toggle}
       title={theme === "dark" ? "Ganti ke Light Mode" : "Ganti ke Dark Mode"}
+      suppressHydrationWarning
     >
       <span>{theme === "dark" ? "☾" : "☀"}</span>
       {theme === "dark" ? "Dark Mode" : "Light Mode"}

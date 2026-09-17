@@ -1007,6 +1007,33 @@ tbody td.val {
   background: var(--surface2);
 }
 
+/* Generic total row, used outside .summary-table too (e.g. Report Bulanan) */
+tbody tr.total-row td {
+  color: var(--text);
+  font-weight: 700;
+  border-top: 2px solid var(--border);
+  border-bottom: none;
+  background: var(--surface2);
+}
+
+/* KPI cards that act as clickable filter toggles (Report Bulanan) */
+.kpi-clickable {
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  border: 1px solid var(--border);
+  transition: border-color 0.15s ease, transform 0.1s ease;
+}
+
+.kpi-clickable:hover {
+  border-color: var(--kpi-accent, var(--mint));
+}
+
+.kpi-clickable[aria-pressed="true"] {
+  border-color: var(--kpi-accent, var(--mint));
+  box-shadow: 0 0 0 1px var(--kpi-accent, var(--mint));
+}
+
 .summary-table td.num {
   font-family: var(--font-mono);
   text-align: right;

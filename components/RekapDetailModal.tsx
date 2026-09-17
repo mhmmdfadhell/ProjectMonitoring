@@ -34,9 +34,9 @@ export default function RekapDetailModal({
       >
         <div className="modal-header">
           <div>
-            <h2>Rincian Transaksi — {row.label}</h2>
+            <h2>Invoice Masuk — {row.label}</h2>
             <div style={{ color: "var(--text-dim)", fontSize: "12px", marginTop: "3px" }}>
-              {projects.length} transaksi / invoice terkait periode ini
+              {projects.length} invoice cair jadi cash-in pada periode ini, terurut sesuai tanggal masuk
             </div>
           </div>
           <button
@@ -67,7 +67,7 @@ export default function RekapDetailModal({
             }}
           >
             <div style={{ fontSize: "10.5px", color: "var(--text-faint)", textTransform: "uppercase", fontFamily: "var(--font-mono)", fontWeight: 600 }}>
-              Cash In (Bank)
+              Cash In
             </div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: "15px", fontWeight: 700, color: "var(--mint)", marginTop: "4px" }}>
               {fmtRp(row.cashInTotal)}
@@ -83,42 +83,10 @@ export default function RekapDetailModal({
             }}
           >
             <div style={{ fontSize: "10.5px", color: "var(--text-faint)", textTransform: "uppercase", fontFamily: "var(--font-mono)", fontWeight: 600 }}>
-              Nilai Invoice
+              Jml Invoice
             </div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: "15px", fontWeight: 700, color: "var(--text)", marginTop: "4px" }}>
-              {fmtRp(row.invoiceTotal)}
-            </div>
-          </div>
-
-          <div
-            style={{
-              background: "var(--surface2)",
-              border: "1px solid var(--border)",
-              borderRadius: "8px",
-              padding: "10px 12px",
-            }}
-          >
-            <div style={{ fontSize: "10.5px", color: "var(--text-faint)", textTransform: "uppercase", fontFamily: "var(--font-mono)", fontWeight: 600 }}>
-              Sudah Dibayar
-            </div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: "15px", fontWeight: 700, color: "var(--mint)", marginTop: "4px" }}>
-              {fmtRp(row.paidTotal)}
-            </div>
-          </div>
-
-          <div
-            style={{
-              background: "var(--surface2)",
-              border: "1px solid var(--border)",
-              borderRadius: "8px",
-              padding: "10px 12px",
-            }}
-          >
-            <div style={{ fontSize: "10.5px", color: "var(--text-faint)", textTransform: "uppercase", fontFamily: "var(--font-mono)", fontWeight: 600 }}>
-              Belum Dibayar
-            </div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: "15px", fontWeight: 700, color: "var(--amber)", marginTop: "4px" }}>
-              {fmtRp(row.unpaidTotal)}
+              {row.invoiceCount}
             </div>
           </div>
         </div>
@@ -128,6 +96,7 @@ export default function RekapDetailModal({
           <table>
             <thead>
               <tr>
+                <th>Tgl Masuk</th>
                 <th>Klien</th>
                 <th>Proyek / Invoice</th>
                 <th>PIC</th>
@@ -135,13 +104,12 @@ export default function RekapDetailModal({
                 <th>Status</th>
                 <th>No. Invoice</th>
                 <th>No. Kontrak/PO</th>
-                <th>Tgl Bayar (TF)</th>
-                <th>Tgl Submit</th>
               </tr>
             </thead>
             <tbody>
               {projects.map((p) => (
                 <tr key={p.id}>
+                  <td>{fmtDate(p.paid_date || p.status_updated_at)}</td>
                   <td>{p.client_norm || p.client}</td>
                   <td className="proj-name">{p.project}</td>
                   <td>{p.pic}</td>
@@ -153,15 +121,13 @@ export default function RekapDetailModal({
                   </td>
                   <td>{p.no_invoice || "—"}</td>
                   <td>{p.no_kontrak || "—"}</td>
-                  <td>{fmtDate(p.paid_date)}</td>
-                  <td>{fmtDate(p.invoice_submit)}</td>
                 </tr>
               ))}
 
               {projects.length === 0 && (
                 <tr>
-                  <td colSpan={9} style={{ textAlign: "center", padding: "24px", color: "var(--text-dim)" }}>
-                    Tidak ada transaksi atau invoice pada tanggal ini.
+                  <td colSpan={8} style={{ textAlign: "center", padding: "24px", color: "var(--text-dim)" }}>
+                    Tidak ada invoice yang masuk pada periode ini.
                   </td>
                 </tr>
               )}

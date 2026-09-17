@@ -7,6 +7,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 const NAV_ITEMS = [
   { href: "/", label: "Overview", icon: "◧" },
   { href: "/rekap", label: "Rekap Bulanan", icon: "▤" },
+  { href: "/laporan", label: "Report Bulanan", icon: "▦" },
   { href: "/invoice", label: "Kelola Invoice", icon: "✎" },
 ];
 

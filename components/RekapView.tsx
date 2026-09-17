@@ -14,6 +14,33 @@ import {
 
 type Mode = "tahun" | "bulan" | "7hari";
 
+// Tanggal cash-in efektif suatu invoice: hanya invoice berstatus Paid yang dianggap "masuk".
+function cashInDate(p: ProjectRow): string | null {
+  if (p.status !== "Paid") return null;
+  return p.paid_date || p.status_updated_at || null;
+}
+
+// Ambil semua invoice yang cair jadi cash-in pada bulan & tahun tertentu, urut naik sesuai tanggal masuk.
+function getCashInProjectsForMonth(
+  projects: ProjectRow[],
+  month: string,
+  year: number
+): ProjectRow[] {
+  return projects
+    .filter((p) => {
+      const trf = getProjectTransferMonthYear(p);
+      return trf && trf.month === month && trf.year === year;
+    })
+    .sort((a, b) => (cashInDate(a) || "").localeCompare(cashInDate(b) || ""));
+}
+
+// Ambil semua invoice yang cair jadi cash-in pada tanggal tertentu, urut naik sesuai tanggal masuk.
+function getCashInProjectsForDate(projects: ProjectRow[], date: string): ProjectRow[] {
+  return projects
+    .filter((p) => cashInDate(p) === date)
+    .sort((a, b) => (cashInDate(a) || "").localeCompare(cashInDate(b) || ""));
+}
+
 export default function RekapView({ data }: { data: MonitoringData }) {
   const { projects } = useProjects(data.projects);
   const { month_order } = data;
@@ -40,59 +67,11 @@ export default function RekapView({ data }: { data: MonitoringData }) {
     }
     if (mode === "bulan") {
       const days = getDaysInMonth(month, year);
-      return days.map((d) => {
-        const cashInTotal = projects
-          .filter(
-            (p) =>
-              p.status === "Paid" &&
-              (p.paid_date === d.date || (!p.paid_date && p.status_updated_at === d.date))
-          )
-          .reduce((a, p) => a + (p.value || 0), 0);
-        const dayProjects = projects.filter(
-          (p) => (p.paid_date || p.invoice_submit || p.status_updated_at) === d.date
-        );
-        const invoiceTotal = dayProjects.reduce((a, p) => a + (p.value || 0), 0);
-        const paidTotal = dayProjects
-          .filter((p) => p.status === "Paid")
-          .reduce((a, p) => a + (p.value || 0), 0);
-        return {
-          key: d.date,
-          label: d.label,
-          cashInTotal,
-          invoiceCount: dayProjects.length,
-          invoiceTotal,
-          paidTotal,
-          unpaidTotal: invoiceTotal - paidTotal,
-        };
-      });
+      return days.map((d) => buildDayRow(d.date, d.label, projects));
     }
     // 7 hari terakhir
     const days = lastNDays(7);
-    return days.map((d) => {
-      const cashInTotal = projects
-        .filter(
-          (p) =>
-            p.status === "Paid" &&
-            (p.paid_date === d.date || (!p.paid_date && p.status_updated_at === d.date))
-        )
-        .reduce((a, p) => a + (p.value || 0), 0);
-      const dayProjects = projects.filter(
-        (p) => (p.paid_date || p.invoice_submit || p.status_updated_at) === d.date
-      );
-      const invoiceTotal = dayProjects.reduce((a, p) => a + (p.value || 0), 0);
-      const paidTotal = dayProjects
-        .filter((p) => p.status === "Paid")
-        .reduce((a, p) => a + (p.value || 0), 0);
-      return {
-        key: d.date,
-        label: d.label,
-        cashInTotal,
-        invoiceCount: dayProjects.length,
-        invoiceTotal,
-        paidTotal,
-        unpaidTotal: invoiceTotal - paidTotal,
-      };
-    });
+    return days.map((d) => buildDayRow(d.date, d.label, projects));
   }, [mode, year, month, month_order, projects]);
 
   const modalProjects = useMemo(() => {
@@ -100,24 +79,10 @@ export default function RekapView({ data }: { data: MonitoringData }) {
     if (mode === "tahun") {
       const [rowMonth, rowYearStr] = selectedRow.key.split("-");
       const rowYear = parseInt(rowYearStr, 10);
-      return projects.filter((p) => {
-        const isInvoiceMonth = p.month === rowMonth && p.year === rowYear;
-        const trf = getProjectTransferMonthYear(p);
-        const isTrfMonth = trf && trf.month === rowMonth && trf.year === rowYear;
-        return isInvoiceMonth || isTrfMonth;
-      });
+      return getCashInProjectsForMonth(projects, rowMonth, rowYear);
     }
-
     // mode === "bulan" or mode === "7hari": selectedRow.key is a date string like "2026-08-12"
-    const targetDate = selectedRow.key;
-    return projects.filter((p) => {
-      const isPaidOnDate =
-        p.status === "Paid" &&
-        (p.paid_date === targetDate || (!p.paid_date && p.status_updated_at === targetDate));
-      const isSubmitOnDate = p.invoice_submit === targetDate;
-      const isStatusOnDate = p.status_updated_at === targetDate;
-      return isPaidOnDate || isSubmitOnDate || isStatusOnDate;
-    });
+    return getCashInProjectsForDate(projects, selectedRow.key);
   }, [selectedRow, mode, projects]);
 
   return (
@@ -127,8 +92,7 @@ export default function RekapView({ data }: { data: MonitoringData }) {
           <div className="brand-eyebrow">// Project Cash</div>
           <h1>Rekap Bulanan</h1>
           <div className="subtitle">
-            Total dibaca per periode — cash in (berdasarkan tgl transfer invoice), nilai invoice, sudah dibayar,
-            dan belum dibayar
+            Cash in per periode — dihitung dari invoice yang sudah cair (tgl transfer), beserta jumlah invoicenya
           </div>
         </div>
       </header>
@@ -177,7 +141,7 @@ export default function RekapView({ data }: { data: MonitoringData }) {
       </div>
 
       <div className="foot-note">
-        Klik icon 👁 pada baris tabel untuk melihat rincian transaksi harian/bulanan secara mendalam
+        Klik icon 👁 pada baris tabel untuk melihat invoice mana saja yang masuk pada periode tersebut, terurut sesuai tanggal masuknya
       </div>
 
       {selectedRow && (
@@ -191,32 +155,28 @@ export default function RekapView({ data }: { data: MonitoringData }) {
   );
 }
 
-function buildMonthRow(
-  month: string,
-  year: number,
-  projects: ProjectRow[]
-): SummaryRow {
-  // Cash in = total uang yang ditransfer pada bulan & tahun ini dari invoice status Paid
-  const cashInTotal = projects.reduce((sum, p) => {
-    const trf = getProjectTransferMonthYear(p);
-    if (trf && trf.month === month && trf.year === year) {
-      return sum + (p.value || 0);
-    }
-    return sum;
-  }, 0);
-
-  const monthProjects = projects.filter((p) => p.month === month && p.year === year);
-  const invoiceTotal = monthProjects.reduce((a, p) => a + (p.value || 0), 0);
-  const paidTotal = monthProjects
-    .filter((p) => p.status === "Paid")
-    .reduce((a, p) => a + (p.value || 0), 0);
+function buildMonthRow(month: string, year: number, projects: ProjectRow[]): SummaryRow {
+  const cashedIn = getCashInProjectsForMonth(projects, month, year);
   return {
     key: `${month}-${year}`,
     label: MONTH_LABELS_SHORT[month] || month,
-    cashInTotal,
-    invoiceCount: monthProjects.length,
-    invoiceTotal,
-    paidTotal,
-    unpaidTotal: invoiceTotal - paidTotal,
+    cashInTotal: cashedIn.reduce((a, p) => a + (p.value || 0), 0),
+    invoiceCount: cashedIn.length,
+    invoiceTotal: 0,
+    paidTotal: 0,
+    unpaidTotal: 0,
+  };
+}
+
+function buildDayRow(date: string, label: string, projects: ProjectRow[]): SummaryRow {
+  const cashedIn = getCashInProjectsForDate(projects, date);
+  return {
+    key: date,
+    label,
+    cashInTotal: cashedIn.reduce((a, p) => a + (p.value || 0), 0),
+    invoiceCount: cashedIn.length,
+    invoiceTotal: 0,
+    paidTotal: 0,
+    unpaidTotal: 0,
   };
 }
