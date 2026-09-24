@@ -818,6 +818,20 @@
       "project": "BiFast (Term 6)",
       "income": 45780000,
       "trf_date": "2026-07-15"
+    },
+    {
+      "month": "Januari",
+      "year": 2026,
+      "project": "BI API Managemnt",
+      "income": 43320000,
+      "trf_date": "2026-01-28"
+    },
+    {
+      "month": "Januari",
+      "year": 2026,
+      "project": "BI Bifast",
+      "income": 43320960,
+      "trf_date": "2026-01-28"
     }
   ],
   "monthly_totals": {
@@ -3929,6 +3943,40 @@
       "paid_date": null,
       "status": "In Progress",
       "status_updated_at": null
+    },
+    {
+      "id": "p-q5ahmz",
+      "month": "Desember",
+      "year": 2025,
+      "client": "Lainnya",
+      "client_norm": "Lainnya",
+      "project": "BI API Managemnt",
+      "pic": "Alwi",
+      "value": 43320000,
+      "bast": "DONE",
+      "no_invoice": "INV-AGT-2025-12-85",
+      "no_kontrak": "",
+      "invoice_submit": "2025-12-15",
+      "paid_date": "2026-01-28",
+      "status": "Paid",
+      "status_updated_at": "2026-01-28"
+    },
+    {
+      "id": "p-jdpp9y",
+      "month": "Desember",
+      "year": 2025,
+      "client": "Lainnya",
+      "client_norm": "Lainnya",
+      "project": "BI Bifast",
+      "pic": "Alwi",
+      "value": 43320960,
+      "bast": "DONE",
+      "no_invoice": "INV-AGT-2025-12-86",
+      "no_kontrak": "",
+      "invoice_submit": "2025-12-15",
+      "paid_date": "2026-01-28",
+      "status": "Paid",
+      "status_updated_at": "2026-01-28"
     }
   ],
   "month_order": [

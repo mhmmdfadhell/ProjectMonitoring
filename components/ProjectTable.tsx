@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { ProjectRow } from "@/lib/types";
-import { availableYears, monthComparator, monthYearLabel } from "@/lib/format";
+import { availableYears, monthComparator, monthYearLabel, getInvoiceType } from "@/lib/format";
 import InvoiceFormModal from "@/components/InvoiceFormModal";
 import MonthCard from "@/components/MonthCard";
 
@@ -43,6 +43,7 @@ export default function ProjectTable({
   const [picFilter, setPicFilter] = useState("");
   const [yearFilter, setYearFilter] = useState("");
   const [monthFilter, setMonthFilter] = useState("");
+  const [jenisFilter, setJenisFilter] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("value");
   const [sortDir, setSortDir] = useState<1 | -1>(-1);
   const [modal, setModal] = useState<
@@ -80,6 +81,7 @@ export default function ProjectTable({
       if (picFilter && p.pic !== picFilter) return false;
       if (yearFilter && String(p.year) !== yearFilter) return false;
       if (monthFilter && p.month !== monthFilter) return false;
+      if (jenisFilter && getInvoiceType(p.no_invoice) !== jenisFilter) return false;
       if (q) {
         const hay = `${p.project} ${p.client_norm} ${p.pic} ${p.no_kontrak || ""} ${p.no_invoice || ""}`.toLowerCase();
         if (!hay.includes(q)) return false;
@@ -95,7 +97,7 @@ export default function ProjectTable({
     });
 
     return filtered;
-  }, [projects, search, statusFilter, picFilter, yearFilter, monthFilter, sortKey, sortDir]);
+  }, [projects, search, statusFilter, picFilter, yearFilter, monthFilter, jenisFilter, sortKey, sortDir]);
 
   // Group into cards by year+month, ordered chronologically regardless of row sort above.
   const groups = useMemo(() => {
@@ -176,6 +178,13 @@ export default function ProjectTable({
                 {p}
               </option>
             ))}
+          </select>
+          <select value={jenisFilter} onChange={(e) => setJenisFilter(e.target.value)}>
+            <option value="">Semua Jenis</option>
+            <option value="NFT">NFT</option>
+            <option value="Aigen">Aigen</option>
+            <option value="GS">GS</option>
+            <option value="Lainnya">Lainnya</option>
           </select>
           <div className="sort-group">
             <select

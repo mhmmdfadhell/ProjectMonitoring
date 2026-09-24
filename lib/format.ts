@@ -152,3 +152,12 @@ export function getDaysInMonth(month: string, year: number): DayBucket[] {
 }
 
 
+
+export function getInvoiceType(no_invoice: string | null | undefined): string {
+  if (!no_invoice) return "Lainnya";
+  const upper = no_invoice.toUpperCase();
+  if (upper.includes("NFT")) return "NFT";
+  if (upper.includes("AGT")) return "Aigen";
+  if (upper.includes("GS")) return "GS";
+  return "Lainnya";
+}

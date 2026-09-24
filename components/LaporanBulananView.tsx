@@ -3,7 +3,7 @@
 import { useMemo, useState, useRef, useCallback } from "react";
 import type { MonitoringData, ProjectStatus } from "@/lib/types";
 import { useProjects } from "@/lib/useProjects";
-import { fmtRp, fmtDate, statusPillClass } from "@/lib/format";
+import { fmtRp, fmtDate, statusPillClass, getInvoiceType } from "@/lib/format";
 import { buildMonthlyReport, getAvailableReportPeriods } from "@/lib/report";
 import { toPng } from "html-to-image";
 
@@ -38,6 +38,7 @@ export default function LaporanBulananView({ data }: { data: MonitoringData }) {
   const [year, setYear] = useState<number>(initialPeriod.year);
   const [month, setMonth] = useState<string>(initialPeriod.month);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [jenisFilter, setJenisFilter] = useState<string>("");
 
   const years = useMemo(
     () => [...new Set(periods.map((p) => p.year))].sort((a, b) => b - a),
@@ -50,9 +51,15 @@ export default function LaporanBulananView({ data }: { data: MonitoringData }) {
   );
 
   const filteredRows = useMemo(() => {
-    if (statusFilter === "all") return rows;
-    return rows.filter((r) => r.status === statusFilter);
-  }, [rows, statusFilter]);
+    let result = rows;
+    if (statusFilter !== "all") {
+      result = result.filter((r) => r.status === statusFilter);
+    }
+    if (jenisFilter) {
+      result = result.filter((r) => getInvoiceType(r.no_invoice) === jenisFilter);
+    }
+    return result;
+  }, [rows, statusFilter, jenisFilter]);
 
   const grandTotal = filteredRows.reduce((a, r) => a + (r.value || 0), 0);
 
@@ -141,7 +148,7 @@ export default function LaporanBulananView({ data }: { data: MonitoringData }) {
   ];
 
   return (
-    <div className="wrap" ref={reportRef}>
+    <div className="wrap wrap--fluid" ref={reportRef}>
       <header>
         <div>
           <div className="brand-eyebrow">// Project Cash</div>
@@ -237,6 +244,13 @@ export default function LaporanBulananView({ data }: { data: MonitoringData }) {
                 {o.label}
               </option>
             ))}
+          </select>
+          <select value={jenisFilter} onChange={(e) => setJenisFilter(e.target.value)}>
+            <option value="">Semua Jenis</option>
+            <option value="NFT">NFT</option>
+            <option value="Aigen">Aigen</option>
+            <option value="GS">GS</option>
+            <option value="Lainnya">Lainnya</option>
           </select>
         </div>
 
