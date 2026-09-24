@@ -93,6 +93,7 @@ export default function MonthCard({
       <div
         id={`mc-body-${label}`}
         className={`month-card-body${expanded ? " open" : ""}`}
+        suppressHydrationWarning
       >
         <div className="table-wrap">
           <table>

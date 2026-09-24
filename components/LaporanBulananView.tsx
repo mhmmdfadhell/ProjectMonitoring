@@ -1,46 +1,42 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef, useCallback } from "react";
 import type { MonitoringData, ProjectStatus } from "@/lib/types";
 import { useProjects } from "@/lib/useProjects";
 import { fmtRp, fmtDate, statusPillClass } from "@/lib/format";
 import { buildMonthlyReport, getAvailableReportPeriods } from "@/lib/report";
+import { toPng } from "html-to-image";
 
 type StatusFilter = "all" | ProjectStatus;
 
 const STATUS_FILTER_OPTIONS: { value: StatusFilter; label: string }[] = [
   { value: "all", label: "Semua Status" },
-  { value: "Invoiced - Unpaid", label: "Belum Terbayar" },
-  { value: "In Progress", label: "Dalam Progress" },
-  { value: "BAST Done - No Invoice", label: "Menunggu BAST Done" },
-  { value: "Paid", label: "Sudah Terbayar (periode ini)" },
+  { value: "Invoiced - Unpaid", label: "Not Paid" },
+  { value: "In Progress", label: "On Progress" },
+  { value: "BAST Done - No Invoice", label: "BAST Done Can't Progress" },
+  { value: "Paid", label: "Done Payment" },
 ];
 
 export default function LaporanBulananView({ data }: { data: MonitoringData }) {
   const { projects } = useProjects(data.projects);
   const { month_order } = data;
 
+  const reportRef = useRef<HTMLDivElement>(null);
+  const [isExporting, setIsExporting] = useState(false);
+
   const periods = useMemo(
     () => getAvailableReportPeriods(projects, month_order),
     [projects, month_order]
   );
 
-  const defaultPeriod = useMemo(() => {
-    if (periods.length === 0) {
-      const now = new Date();
-      return { month: month_order[now.getMonth()], year: now.getFullYear() };
-    }
-    // Coba cocokkan ke bulan berjalan (real-world) bila datanya tersedia,
-    // jika tidak pakai periode terbaru yang ada di data.
-    const now = new Date();
-    const nowMonth = month_order[now.getMonth()];
-    const nowYear = now.getFullYear();
-    const match = periods.find((p) => p.month === nowMonth && p.year === nowYear);
-    return match || periods[periods.length - 1];
-  }, [periods, month_order]);
+  const initialPeriod = useMemo(() => {
+    const avail = getAvailableReportPeriods(data.projects, data.month_order);
+    if (avail.length === 0) return { month: data.month_order[0] || "Januari", year: 2026 };
+    return avail[avail.length - 1];
+  }, [data.projects, data.month_order]);
 
-  const [year, setYear] = useState<number>(defaultPeriod.year);
-  const [month, setMonth] = useState<string>(defaultPeriod.month);
+  const [year, setYear] = useState<number>(initialPeriod.year);
+  const [month, setMonth] = useState<string>(initialPeriod.month);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
   const years = useMemo(
@@ -60,30 +56,83 @@ export default function LaporanBulananView({ data }: { data: MonitoringData }) {
 
   const grandTotal = filteredRows.reduce((a, r) => a + (r.value || 0), 0);
 
+  const handleExportImage = useCallback(async () => {
+    if (!reportRef.current) return;
+    const el = reportRef.current;
+    try {
+      setIsExporting(true);
+      el.classList.add("exporting-image");
+
+      // Tunggu browser recalculate layout untuk full table width
+      await new Promise((resolve) => setTimeout(resolve, 60));
+
+      const dataUrl = await toPng(el, {
+        cacheBust: true,
+        pixelRatio: 2,
+        skipFonts: true,
+        width: el.scrollWidth,
+        height: el.scrollHeight,
+        backgroundColor:
+          typeof window !== "undefined"
+            ? getComputedStyle(document.body).getPropertyValue("--bg").trim() || "#0f1216"
+            : "#0f1216",
+        filter: (node) => {
+          if (node instanceof HTMLElement) {
+            if (node.dataset.exportIgnore === "true") return false;
+            const tag = node.tagName.toLowerCase();
+            if (
+              tag === "script" ||
+              tag === "iframe" ||
+              tag === "object" ||
+              tag === "embed" ||
+              tag.includes("-") ||
+              node.id.startsWith("chrome-extension") ||
+              node.hasAttribute("data-extension-id")
+            ) {
+              return false;
+            }
+          }
+          return true;
+        },
+      });
+
+      const link = document.createElement("a");
+      link.download = `Summary-Laporan-Bulanan-${month}-${year}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error("Gagal export gambar:", err);
+      alert("Gagal melakukan export summary gambar. Silakan coba lagi.");
+    } finally {
+      el.classList.remove("exporting-image");
+      setIsExporting(false);
+    }
+  }, [month, year]);
+
   const kpis = [
     {
-      label: "Belum Terbayar",
+      label: "Not Paid",
       value: fmtRp(summary.unpaidTotal),
       sub: `${summary.unpaidCount} invoice`,
       accent: "var(--amber)",
       filter: "Invoiced - Unpaid" as StatusFilter,
     },
     {
-      label: "Dalam Progress",
+      label: "On Progress",
       value: fmtRp(summary.progressTotal),
       sub: `${summary.progressCount} proyek`,
       accent: "var(--coral)",
       filter: "In Progress" as StatusFilter,
     },
     {
-      label: "Menunggu BAST Done",
+      label: "BAST Done Can't Progress",
       value: fmtRp(summary.bastTotal),
       sub: `${summary.bastCount} proyek`,
       accent: "var(--slate)",
       filter: "BAST Done - No Invoice" as StatusFilter,
     },
     {
-      label: "Sudah Terbayar",
+      label: "Done Paid",
       value: fmtRp(summary.paidTotal),
       sub: `${summary.paidCount} invoice cair periode ini`,
       accent: "var(--mint)",
@@ -92,7 +141,7 @@ export default function LaporanBulananView({ data }: { data: MonitoringData }) {
   ];
 
   return (
-    <div className="wrap">
+    <div className="wrap" ref={reportRef}>
       <header>
         <div>
           <div className="brand-eyebrow">// Project Cash</div>
@@ -102,10 +151,41 @@ export default function LaporanBulananView({ data }: { data: MonitoringData }) {
             (carry-over) ke laporan bulan berikutnya sampai statusnya Paid
           </div>
         </div>
+        <div data-export-ignore="true" style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={handleExportImage}
+            disabled={isExporting}
+            style={{ gap: 6 }}
+          >
+            {isExporting ? (
+              <>⌛ Mengunduh...</>
+            ) : (
+              <>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                Export Summary (Gambar)
+              </>
+            )}
+          </button>
+        </div>
       </header>
 
       <div className="panel">
-        <div className="controls" style={{ marginBottom: 18 }}>
+        <div className="controls" style={{ marginBottom: 18 }} data-export-ignore="true">
           <select value={month} onChange={(e) => setMonth(e.target.value)}>
             {month_order.map((m) => (
               <option key={m} value={m}>
@@ -147,7 +227,7 @@ export default function LaporanBulananView({ data }: { data: MonitoringData }) {
           <span className="tag">{filteredRows.length} baris · {fmtRp(grandTotal)}</span>
         </div>
 
-        <div className="controls" style={{ marginBottom: 14 }}>
+        <div className="controls" style={{ marginBottom: 14 }} data-export-ignore="true">
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
@@ -227,7 +307,7 @@ export default function LaporanBulananView({ data }: { data: MonitoringData }) {
         </div>
       </div>
 
-      <div className="foot-note">
+      <div className="foot-note" data-export-ignore="true">
         Klik salah satu kartu ringkasan di atas untuk memfilter tabel sesuai kategori status.
         Invoice yang belum Paid akan terus muncul di laporan bulan-bulan berikutnya sampai
         lunas; invoice yang sudah Paid hanya muncul pada laporan bulan saat ia benar-benar cair.
@@ -235,3 +315,4 @@ export default function LaporanBulananView({ data }: { data: MonitoringData }) {
     </div>
   );
 }
+

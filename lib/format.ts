@@ -1,19 +1,25 @@
 export function fmtRp(n: number | null | undefined): string {
   if (n === null || n === undefined || isNaN(n)) return "—";
-  return "Rp" + Math.round(n).toLocaleString("id-ID");
+  const rounded = Math.round(n);
+  const formatted = rounded.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  return "Rp" + formatted;
 }
 
 
 export function fmtDate(s: string | null | undefined): string {
   if (!s) return "—";
   try {
-    const d = new Date(s);
-    if (isNaN(d.getTime())) return s;
-    return d.toLocaleDateString("id-ID", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
+    const parts = s.split("-");
+    if (parts.length === 3) {
+      const yr = parts[0];
+      const moIdx = parseInt(parts[1], 10) - 1;
+      const day = parts[2];
+      const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+      if (moIdx >= 0 && moIdx < 12) {
+        return `${day} ${MONTH_SHORT[moIdx]} ${yr}`;
+      }
+    }
+    return s;
   } catch {
     return s;
   }
@@ -114,11 +120,15 @@ export interface DayBucket {
 export function lastNDays(n: number): DayBucket[] {
   const days: DayBucket[] = [];
   const today = new Date();
+  const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
   for (let i = n - 1; i >= 0; i--) {
     const d = new Date(today);
     d.setDate(d.getDate() - i);
-    const date = d.toISOString().slice(0, 10);
-    const label = d.toLocaleDateString("id-ID", { day: "2-digit", month: "short" });
+    const yr = d.getFullYear();
+    const mo = String(d.getMonth() + 1).padStart(2, "0");
+    const dy = String(d.getDate()).padStart(2, "0");
+    const date = `${yr}-${mo}-${dy}`;
+    const label = `${dy} ${MONTH_SHORT[d.getMonth()]}`;
     days.push({ date, label });
   }
   return days;

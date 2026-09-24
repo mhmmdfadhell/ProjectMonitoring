@@ -1293,5 +1293,31 @@ tbody tr.total-row td {
   }
 }
 
+/* ==========================================================================
+   Image Export Styles (Full Table Expansion)
+   ========================================================================== */
+.wrap.exporting-image {
+  width: max-content !important;
+  min-width: 1080px !important;
+  max-width: none !important;
+  padding: 28px 32px 32px !important;
+}
+
+.wrap.exporting-image .panel {
+  width: 100% !important;
+  max-width: none !important;
+  overflow: visible !important;
+}
+
+.wrap.exporting-image .table-wrap {
+  overflow: visible !important;
+  width: 100% !important;
+}
+
+.wrap.exporting-image table {
+  width: 100% !important;
+  min-width: 1020px !important;
+}
+
 
 

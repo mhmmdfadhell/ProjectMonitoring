@@ -34,9 +34,11 @@ export default function ThemeToggle() {
       <button
         type="button"
         className="theme-toggle"
+        title="Ganti Mode"
         suppressHydrationWarning
       >
-        <span>☾</span> Dark Mode
+        <span suppressHydrationWarning>☾</span>
+        <span suppressHydrationWarning>Dark Mode</span>
       </button>
     );
   }
@@ -49,8 +51,8 @@ export default function ThemeToggle() {
       title={theme === "dark" ? "Ganti ke Light Mode" : "Ganti ke Dark Mode"}
       suppressHydrationWarning
     >
-      <span>{theme === "dark" ? "☾" : "☀"}</span>
-      {theme === "dark" ? "Dark Mode" : "Light Mode"}
+      <span suppressHydrationWarning>{theme === "dark" ? "☾" : "☀"}</span>
+      <span suppressHydrationWarning>{theme === "dark" ? "Dark Mode" : "Light Mode"}</span>
     </button>
   );
 }
